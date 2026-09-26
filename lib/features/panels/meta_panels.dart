@@ -274,7 +274,9 @@ class PerformancePanel extends ConsumerWidget {
           ),
           SectionHeader(titleKey: 'panel.performance.section.capabilities'),
           for (final capability in capabilities.methods)
-            KeyValueRow(labelKey: capability, value: '✓'),
+            // capability 是引擎方法名（如 runtime.set_param），不是 i18n 键，
+            // 必须走 label 原样显示，否则会报 key not found 并露出原始键。
+            KeyValueRow(label: capability, value: '✓'),
           SectionHeader(titleKey: 'panel.performance.section.settings'),
           KeyValueRow(
             labelKey: 'settings.renderQuality',

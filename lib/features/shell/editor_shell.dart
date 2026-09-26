@@ -239,7 +239,11 @@ class _EditorShellState extends ConsumerState<EditorShell>
             final path = files.first.path;
             await ref.read(projectProvider.notifier).open(path);
           },
-          child: Container(
+          child: Material(
+            // 外壳是自绘的停靠布局，没有 Scaffold；而 MaterialApp 本身
+            // **不提供** Material 祖先，所以这里必须显式给一个，
+            // 否则树里所有 InkWell（SmallIconButton / ListRow …）都会抛
+            // 「No Material widget found」。
             color: AppTheme.of(context).panelBackground,
             child: Column(
               children: <Widget>[
