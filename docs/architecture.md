@@ -59,13 +59,37 @@ lib/
 * 导出产出 `<name>.amproj` + 伴生 `<name>.amproj.sha256`（64 位小写十六进制）。
 * 导入先解包再校验，失败**回滚**删除目标目录。
 
+### 新建工程的两条路径
+
+引擎的方法面里没有 `project.create`，所以 `ContractAmEngine` 用
+`project.new` + `project.save` 拼出等价行为：
+
+1. 宿主先写 `info.json` / `registry.json`（引擎的 `project.save` 在目标目录
+   已存在时会走 `Project::open`，而它要求这两个文件）；
+2. `project.new` 让引擎建一份空模型；
+3. 补一个 `doc.command op:"node_create"` 的根部件 —— `project.new` 建出的模型
+   没有节点，而内置实现（`defaultAnimaDocument`）带一个根节点，不补则两条
+   路径的新工程不一致；
+4. `project.save` 由**引擎**写出完整 spec（含 `spec/model.json`），
+   宿主不重复实现模型格式。
+
+内置实现（`LocalAmEngine`）走 `AmprojWriter` 自己落盘。
+两条路径都会在目标目录已存在 `info.json` 时抛 `PROJECT_EXISTS` 拒绝覆盖
+（覆盖 `info.json` / `registry.json` / `spec/` 不可逆），
+`ProjectController` 把它转成 `notice.project.exists` 提示。
+
+`project.load` / `project.save` 都不回传 `display_name`，适配层自己记住刚写下的
+`info.json` 值。
+
 ## 测试
 
 `test/` 覆盖：内置引擎契约（命令/撤销/求值/动作/统计）、
 `.amproj` 往返（创建→保存→校验→导出→导入）、校验与安全（哈希不符、
-非法名称、zip-slip、非空目标、导入回滚），以及**真实引擎冒烟**
+非法名称、zip-slip、非空目标、导入回滚）、**外壳渲染**（无异常、
+`InkWell` 都有 `Material` 祖先、启动页无溢出），以及**真实引擎冒烟**
 （`contract_engine_test.dart`：`system.version`/能力探测、打开工程、
-`doc.command` → `doc.undo` → `doc.model` 往返；引擎库缺失时自动跳过断言）。
+`doc.command` → `doc.undo` → `doc.model` 往返、`project.create` 落盘后可被
+引擎装载并重新打开、拒绝覆盖已有工程；引擎库缺失时自动跳过断言）。
 
 ```bash
 dart format lib test

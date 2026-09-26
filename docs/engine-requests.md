@@ -52,6 +52,14 @@ UI 期望的方法面不同（`project.create/close/info/export/import/set_confi
 翻译层要点：
 
 * `project.load` 结果**不含 `name`** → 从 `project.spec` 的 `model.name` 取。
+* `project.create` 引擎没有 → 用 `project.new`（建空模型）+ `project.save`
+  拼出来：宿主先写 `info.json`/`registry.json`（`project.save` 在目录已存在时
+  走 `Project::open`，要求这两个文件），再由引擎写出完整 spec。
+  `project.save` / `project.load` 都**不回传 `display_name`**，
+  所以适配层自己记住刚写下的 `info.json` 值。
+* 新建工程在 `project.new` 之后补一个 `doc.command op:"node_create"` 的根部件 ——
+  `project.new` 建出的模型没有任何节点，而内置实现的空工程带一个根节点，
+  不补的话两条路径的新工程不一致。
 * `doc.undo` / `doc.redo` 会改变结构 → 必须重新拉 `project.spec` 刷新缓存，
   否则 `doc.query path:"hierarchy"` 返回旧节点表。
 * 眨眼/呼吸/口型（`runtime.blink/breath/lipsync`）引擎没有 → **宿主侧**实现，
@@ -68,15 +76,17 @@ UI 期望的方法面不同（`project.create/close/info/export/import/set_confi
 | 2 | `doc.query path:"scene"` 完整性 | 仅 `drawables[].id/vertices` | 返回完整几何（`uvs`/`indices`/`opacity`/`blend`/`texture`/`draw_order`/`mask`）与 `deformers`，编辑器即可删掉本地 `AmSceneProvider` |
 | 3 | `doc.command` 新建对象返回 id | 只返回 `{effects, revision}` | 追加可选 `created:["<id>"]`（向后兼容），免去整表重载 |
 | 4 | 动作/物理/表情的**编辑**能力 | 引擎只有运行时播放与 `spec` 层替换 | 补齐动作关键帧增删改、物理设置读写、表情增删改的编辑操作 |
-| 5 | `project.create` 脚手架 | 宿主侧写目录 | 若引擎愿意接管，暴露建目录+空 spec 的方法 |
+| 5 | 暴露 `project.create` | `am-format` 有 `Project::create`，但 `am_call` 没暴露；宿主只能 `project.new` + `project.save` 绕 | 直接暴露建目录 + 空 spec 的方法，宿主就不必自己写 `info.json` |
 | 6 | `diagnostics.stats` 字段稳定性 | 字段：`nodes/parameters/textures/motions/expressions/physics/drawables/revision/dirty/frame` | 性能面板按 `stat.<field>` 取文案，请保持字段名稳定或提前通知 |
-| 7 | `project.load` 回传 `name` | 无 | 建议直接回传 `model.name`，省一次 `project.spec` |
+| 7 | `project.load` / `project.save` 回传 `name` + `display_name` | 只有 `path/nodes/parameters/motions/expressions` | 回传 `model.name` 与 `info.display_name`，省掉宿主自己记名字 |
+| 8 | `project.save {path}` 对已存在目录的语义 | 目录存在 → `Project::open`（要求 `info.json`，否则报错）；不存在 → `Project::create` | 建议目录存在但为空时也走 `Project::create`，或明确报「目录非空/不是工程」 |
 
 已确认的语义：
 
 * `min_sdk` 是**格式版本整数**（`format.schema.json`：`integer, minimum 1`），不是 semver 字符串。
 * `spec/model.json` 的 `nodes` 是**数组**（字段 `kind`），不是以 id 为键的映射。
 * `project.save {path}`：path 是目录 → 打开并写入；否则按 `Project::create` 处理。
+* `project.new {name, width?, height?}`：只改内存模型，不落盘；画布默认 1024×1024。
 
 ## 4. 降级与打包
 

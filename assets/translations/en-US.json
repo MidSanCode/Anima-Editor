@@ -141,6 +141,7 @@
   "notice.project.validationIssues": "Validation found {count} error(s)",
   "notice.project.exportRejected": "Validation failed, export cancelled",
   "notice.project.nameInvalid": "Names may only contain lowercase letters, digits, underscores and dashes",
+  "notice.project.exists": "That folder already contains a project; choose another one",
   "notice.project.noPath": "Save the project (Save as) before using this action",
   "notice.project.webNoDirectory": "A browser build cannot pick a folder; use the desktop build instead",
   "notice.project.webMemoryOnly": "Browser mode keeps everything in memory ({bytes} bytes); nothing is written to disk",
