@@ -69,8 +69,10 @@ void main() {
     await engine!.call('doc.undo');
     final hierarchy = await engine!.call('doc.query', {'path': 'hierarchy'});
     final nodes = asJsonMap(hierarchy['nodes']);
-    expect(nodes.values.map((n) => '${asJsonMap(n)['name']}'),
-        isNot(contains('PartA')));
+    expect(
+      nodes.values.map((n) => '${asJsonMap(n)['name']}'),
+      isNot(contains('PartA')),
+    );
 
     // doc.model 是引擎的原始模型视图，必须可直达。
     final model = await engine!.call('doc.model');
