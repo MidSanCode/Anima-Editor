@@ -4,15 +4,16 @@
 lib/
 ├── app.dart / main.dart          应用根：EasyLocalization、主题、ProviderScope、全局错误界面
 ├── core/
-│   ├── engine/                   引擎抽象 + 内置降级实现（不含任何 UI）
+│   ├── engine/                   引擎抽象 + 真实引擎适配 + 内置降级实现（不含任何 UI）
 │   │   ├── am_engine.dart        抽象接口 AmEngine / AmEngineBackend / 响应解包
 │   │   ├── am_types.dart         契约数据类型（能力、事件、校验、节点/混合/插值枚举）
 │   │   ├── ffi_am_engine*.dart   FFI 动态库探测（io / stub 条件导出）
+│   │   ├── contract_am_engine.dart UI 方法面 → 真实引擎 C ABI 的翻译层
 │   │   ├── local_am_engine.dart  内置引擎：完整实现 kLocalEngineMethods
 │   │   ├── local_document.dart   文档模型 + 全部 doc.command 操作 + 撤销栈
 │   │   ├── local_eval.dart       求值：关键形插值、变形器级联、命中测试
 │   │   ├── am_scene_provider.dart 降级画家需要的场景接口
-│   │   └── engine_bootstrap.dart 启动策略：插件 → FFI → 内置，绝不抛给 UI
+│   │   └── engine_bootstrap.dart 启动策略：FFI → 内置，绝不抛给 UI
 │   ├── project/                  `.amproj` 读写（目录模式 ⇄ ZIP+Deflate）
 │   ├── state/                    Riverpod 控制器（设置/文档/工程/运行时/UI/引擎）
 │   ├── layout/                   停靠布局与宿主（四区域、拖拽换区、尺寸持久化）
@@ -32,15 +33,17 @@ lib/
 
 1. `core/` 不依赖 `features/`，也不出现任何业务文案；所有用户可见文本走 i18n key。
 2. UI 只通过 `AmEngine.call(method, params)` 访问引擎；**没有**第二个调用入口。
+   真实引擎的方法面与 UI 不同，差异全部在 `ContractAmEngine` 里翻译
+   （详见 `docs/engine-requests.md`）。
 3. 引擎不可用时 `engine_bootstrap` 降级到内置实现并在通知栏给出可读提示，
    界面**不崩溃、不白屏**（A0-4）。
 4. 纹理桥可用时画布用 `Texture` widget，否则用 `CustomPaint` 降级画家；
-   两条路径互斥。
+   两条路径互斥。当前 ABI 未导出共享纹理句柄，因此实际走降级画家。
 
 ## 数据流
 
 ```
-用户操作 → 面板 dispatch('doc.command', ...) → LocalAmEngine/FfiAmEngine
+用户操作 → 面板 dispatch('doc.command', ...) → ContractAmEngine/LocalAmEngine
         → 文档修订号 +1 → documentProvider 重载 → 面板/画布重建
 播放：Ticker → PlaybackController.advance(dt) → runtime.seek(time)
         → 参数写入 → sceneProvider 重求值 → 画布重绘
@@ -60,10 +63,18 @@ lib/
 
 `test/` 覆盖：内置引擎契约（命令/撤销/求值/动作/统计）、
 `.amproj` 往返（创建→保存→校验→导出→导入）、校验与安全（哈希不符、
-非法名称、zip-slip、非空目标、导入回滚）。
+非法名称、zip-slip、非空目标、导入回滚），以及**真实引擎冒烟**
+（`contract_engine_test.dart`：`system.version`/能力探测、打开工程、
+`doc.command` → `doc.undo` → `doc.model` 往返；引擎库缺失时自动跳过断言）。
 
 ```bash
 dart format lib test
 flutter analyze
 flutter test
+```
+
+i18n 覆盖率校验：
+
+```powershell
+& .\tool\check_translations.ps1
 ```

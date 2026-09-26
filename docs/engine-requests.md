@@ -1,81 +1,87 @@
 # 引擎对接需求（编辑器 → engine）
 
-本文档记录编辑器/查看器在实现过程中对 `tasks.md` §3 引擎契约的**补充需求**与
-**待确认点**。在原生引擎（`engine/`）交付前，编辑器使用内置降级实现
-（`lib/core/engine/local_am_engine.dart`）跑通全部流程，因此以下条目的
-“当前行为”均已可用，“期望行为”是原生引擎需要保证的语义。
+> 状态：**原生引擎已交付并接通**。编辑器通过 `anima.dll` 的 C ABI 直接驱动真实引擎；
+> `lib/core/engine/local_am_engine.dart`（内置实现）保留为**降级路径**，
+> 引擎缺失/初始化失败时自动接管，保证 A0-5「绝不崩溃或白屏」。
 
-约定：所有调用都走唯一入口 `am_call(engine, method, params_json) -> response_json`，
-成功 `{"ok":true,"result":{...}}`，失败 `{"ok":false,"error":{"code","message"}}`。
+本文档记录接入后的**实际契约**、编辑器侧的**翻译层**，以及仍需引擎侧补齐的条目。
 
 ---
 
-## 1. 必须补齐的方法
+## 1. 实际使用的 C ABI
 
-| 方法 | 用途 | 当前（内置实现） | 期望 |
+来源：`engine/crates/am-ffi/bindings/include/anima.h`。
+
+| 符号 | 用途 |
+| --- | --- |
+| `const char* am_version(void)` | 引擎版本（静态字符串，不需释放） |
+| `am_engine* am_engine_new(void)` | 建空引擎 |
+| `am_engine* am_engine_new_from_file(const char* path)` | 从工程建引擎 |
+| `void am_engine_free(am_engine*)` | 释放 |
+| `char* am_call(am_engine*, const char* method, const char* params_json)` | 唯一方法入口，返回 JSON（**需 `am_string_free`**） |
+| `void am_string_free(char*)` | 释放 `am_call` 返回值 |
+| `size_t am_frame_copy(am_engine*, uint8_t* out, size_t capacity)` | 回读离屏帧像素 |
+| `void am_set_event_callback(am_engine*, am_event_cb, void* user_data)` | 事件订阅 |
+| `const char* am_last_error(void)` | 最近错误（静态字符串） |
+
+约定：
+
+* 信封 `{"ok":true,"result":{...}}` / `{"ok":false,"error":{"code":<int>,"message":"..."}}`；
+  错误码是**数字**（`-32600`/`-32601`/`-32602`/`-32603`/`-32000`）。
+* `am_engine*` **非线程安全、不可重入**；编辑器所有调用串行化。
+* 动态库探测顺序（`lib/core/engine/ffi_am_engine_io.dart`）：
+  环境变量 `ANIMA_ENGINE_LIB` → `anima.dll`（Windows）/ `libanima.dylib` / `libanima.so`；
+  搜索根依次为 `''`、当前目录、可执行文件目录、`exeDir/data`、`exeDir/lib`、
+  `../engine/target/debug`、`../engine/target/release`，最后回退 `DynamicLibrary.process()`。
+  全部失败 → `tryCreateFfiEngine` 返回 `null`，上层降级，**不抛异常**。
+
+## 2. 引擎方法面 vs UI 方法面
+
+引擎真实方法（`am-core` 派发）：`system.ping/version/capabilities`；
+`project.new/load/save/validate/spec/set_spec`；`doc.command/undo/redo/history/model/set_model/evaluate`；
+`runtime.set_param/params/reset_params/advance/set_time/pause/resume/state/scene`；
+`motion.list/play/stop/pause/resume/seek/state`；`expression.list/set`；
+`physics.info/step/reset`；`renderer.info/init/resize/set_view/set_texture/clear_textures/render/frame/save_png`；
+`diagnostics.stats`。
+
+UI 期望的方法面不同（`project.create/close/info/export/import/set_config`；
+`doc.query/revision`；`runtime.step/seek/play_motion/...`；`renderer.create/destroy/frame/pick/measure` 等）。
+**做法：UI 方法面保持不变，全部在 `lib/core/engine/contract_am_engine.dart`
+（`ContractAmEngine`）里翻译**，因此面板代码不感知引擎细节。
+
+翻译层要点：
+
+* `project.load` 结果**不含 `name`** → 从 `project.spec` 的 `model.name` 取。
+* `doc.undo` / `doc.redo` 会改变结构 → 必须重新拉 `project.spec` 刷新缓存，
+  否则 `doc.query path:"hierarchy"` 返回旧节点表。
+* 眨眼/呼吸/口型（`runtime.blink/breath/lipsync`）引擎没有 → **宿主侧**实现，
+  按参数名（`EyeOpen` / `Breath` / `MouthOpen`）写 `runtime.set_param`。
+* `.amproj` 压缩包导出/导入引擎没有 → 宿主侧 `AmprojWriter`；适配层对这些方法抛
+  `AmException('UNSUPPORTED')`，由 UI 走宿主路径。
+* `renderer.*` 只维护视图状态；实际显示当前走降级画家（见第 3 节）。
+
+## 3. 仍需引擎侧补齐（按优先级）
+
+| # | 条目 | 现状 | 期望 |
 | --- | --- | --- | --- |
-| `runtime.params` | 读取当前全部参数值 | `{"params":{"<param_id>":0.0}}` | 同左，键为**参数 id** |
-| `runtime.seek` | 直接定位到动作时间（拖拽播放头） | `{"time":0.5,"params":{...},"playing":false}` | 同左；不得改变 `playing` 状态 |
-| `renderer.pick` | 画布点选 | 入参 `{x,y,space:"screen"\|"world"}`，返回 `{"id":null\|"<node_id>"}` | 明确 `space` 语义（默认 `screen`） |
-| `doc.query` `path:"scene"` | 读取**求值后**的几何（降级画家必需） | `{"drawables":[{"id","vertices":[[x,y],...]}]}` | 见第 3 节 |
-| `doc.query` `path:"settings"` | 模型设置 | `{"settings":{...}}` | 同左 |
-| `project.info` | 工程元信息 + 已注册文件 + spec 列表 | 见实现 | 同左 |
+| 1 | **外部纹理桥** | ABI 无纹理句柄导出；画布只能用降级画家（`AmSceneProvider`）重绘 | 暴露离屏帧的共享纹理句柄（或确认 `renderer.render` + `am_frame_copy` + `decodeImageFromPixels` 为受支持路径），使画布走 `Texture` widget |
+| 2 | `doc.query path:"scene"` 完整性 | 仅 `drawables[].id/vertices` | 返回完整几何（`uvs`/`indices`/`opacity`/`blend`/`texture`/`draw_order`/`mask`）与 `deformers`，编辑器即可删掉本地 `AmSceneProvider` |
+| 3 | `doc.command` 新建对象返回 id | 只返回 `{effects, revision}` | 追加可选 `created:["<id>"]`（向后兼容），免去整表重载 |
+| 4 | 动作/物理/表情的**编辑**能力 | 引擎只有运行时播放与 `spec` 层替换 | 补齐动作关键帧增删改、物理设置读写、表情增删改的编辑操作 |
+| 5 | `project.create` 脚手架 | 宿主侧写目录 | 若引擎愿意接管，暴露建目录+空 spec 的方法 |
+| 6 | `diagnostics.stats` 字段稳定性 | 字段：`nodes/parameters/textures/motions/expressions/physics/drawables/revision/dirty/frame` | 性能面板按 `stat.<field>` 取文案，请保持字段名稳定或提前通知 |
+| 7 | `project.load` 回传 `name` | 无 | 建议直接回传 `model.name`，省一次 `project.spec` |
 
-## 2. 语义澄清
+已确认的语义：
 
-1. **参数寻址**：契约里 `runtime.set_param` / `runtime.set_params` 的键是
-   参数 **id**（`doc.query path:"parameters"` 返回的键）。编辑器 UI 全部按 id 寻址。
-   内置实现额外接受**参数名**作为别名（`_resolveParamId`），建议原生引擎同样容错。
-2. **`doc.command` 的返回值**：当前只返回 `{"revision":n}`。`node.create` /
-   `node.duplicate` / `param.create` 等会**新建对象**的命令，调用方拿不到新 id，
-   只能整表重载。建议返回 `{"revision":n,"created":["<id>"]}`（可选字段，向后兼容）。
-3. **`physics.query` / `spec/physics.json`**：内置实现统一使用
-   `{"settings":[...]}` 作为外壳键（`doc.query path:"physics"` 亦同），
-   `spec/pose.json` 用 `{"pose":[...]}`。原生引擎需保持一致，否则工程往返会丢数据。
-4. **`project.export` 拒绝语义**：校验失败必须以 `{"ok":false,"error":{"code":"VALIDATION_FAILED","detail":{"issues":[...]}}}`
-   返回，且**不得产出** `.amproj` 与 `.amproj.sha256`。
-5. **`project.import` 回滚**：解包后校验失败（或解析失败）必须删除目标目录，
-   不允许留下半成品；目标目录非空时返回 `DEST_NOT_EMPTY` 且不做任何修改。
-6. **`renderer.view`**：入参 `{pan:[x,y],zoom,flip_x,flip_y,canvas:[w,h]}`，
-   返回 `{"view":{...}}`；编辑器在窗口尺寸变化时防抖调用（约 16ms）。
-7. **纹理桥**：`am_renderer_texture_info` 返回 `{"texture_id":n,"width":w,"height":h,"format":"rgba8"}`
-   时编辑器使用 Flutter `Texture` widget；返回空/失败时回退到降级画家（`AmSceneProvider`）。
-   两者**不得同时**渲染，避免重影。
+* `min_sdk` 是**格式版本整数**（`format.schema.json`：`integer, minimum 1`），不是 semver 字符串。
+* `spec/model.json` 的 `nodes` 是**数组**（字段 `kind`），不是以 id 为键的映射。
+* `project.save {path}`：path 是目录 → 打开并写入；否则按 `Project::create` 处理。
 
-## 3. 画布几何（最重要的缺口）
+## 4. 降级与打包
 
-`Texture` 路径下，几何留在引擎内，编辑器不需要顶点数据。但引擎不可用时，
-降级画家必须自己画。为此编辑器引入了**本地**接口 `AmSceneProvider`
-（`lib/core/engine/am_scene_provider.dart`），提供：
-
-* `paramValues` / `view` / `background` / `playingMotion` / `isPlaying` / `expression`
-* `buildScene({includeHidden, selectedVertices, selectedNode}) -> AmScene`
-* `buildSceneWith({params, includeHidden, selectedNode}) -> AmScene`（洋葱皮：用**历史参数值**求值）
-
-`AmScene` 包含：`bounds`、`drawables`（id/name/vertices/uvs/indices/opacity/blend/texture/draw_order/mask/selectedVertexIds）、
-`deformers`（id/name/kind/pivot/angle/scale/rows/cols/control_points/visible/locked）。
-
-**请引擎侧确认**：是否把 `doc.query path:"scene"` 扩展为返回上述完整结构
-（当前只返回 `drawables[].id/vertices`）。若确认，编辑器可把降级画家统一到契约上，
-删掉 `AmSceneProvider` 这一本地扩展。
-
-## 4. 插件与打包
-
-* `pubspec.yaml` 中 `anima_engine` 路径依赖目前**保持注释**：引擎仓库未就绪时
-  `flutter pub get` 会直接失败。引擎交付后取消注释即可（编辑器已按
-  “插件优先、FFI 次之、内置兜底”的顺序探测，见 `engine_bootstrap.dart`）。
-* FFI 动态库探测顺序（`ffi_am_engine.dart`）：环境变量 `ANIMA_ENGINE_LIB`
-  → `anima_engine.dll` / `libanima_engine.so` / `libanima_engine.dylib`
-  → `am_engine.dll` / `libam_ffi.so`。
-* 符号：`am_engine_create` / `am_engine_destroy` / `am_call` / `am_string_free` /
-  `am_set_event_callback` / `am_renderer_texture_info` / `am_engine_version`。
-* 事件回调（`am_set_event_callback`）负载为 JSON 字符串，类型：
-  `frame_presented` / `doc_changed` / `error` / `progress`；编辑器把它们转成
-  `AmEvent` 并广播到 `engineEventsProvider`。
-
-## 5. 已修复/已确认的内置实现行为
-
-* `AmprojWriter.writeAsset` 现在会同步重建 `registry.json`，否则校验报 `UNREGISTERED_ASSET`。
-* `AmprojWriter.importArchive` 在**任何** `AmException`（含解析失败）时回滚目标目录。
-* 关键形求值：同一节点被多个参数驱动时，各参数贡献**叠加**（`base + Σ blendDelta`），
-  不再相互覆盖；`AmSceneBuilder` 的 `blendDelta` 已实现。
+* `pubspec.yaml` 中的 `anima_engine` 路径依赖**保持注释**：真实接入走 C ABI，
+  不依赖 Flutter 插件；引擎未就绪时 `flutter pub get` 也不会失败。
+* 启动策略（`engine_bootstrap.dart`）：FFI → 内置实现。
+  FFI 成功时用 `ContractAmEngine` 包装，`warningKey` 为 `null`；
+  降级时 `warningKey = 'engine.warning.fallback'`，界面显示横幅而非崩溃。
