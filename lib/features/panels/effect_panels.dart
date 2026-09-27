@@ -63,7 +63,12 @@ class PhysicsPanel extends ConsumerWidget {
                     for (final setting in settings)
                       _PhysicsSetting(
                         setting: setting,
-                        parameters: document.parameters.keys.toList(),
+                        // 物理绑定存的是参数 id（引擎要求 id）；这里带上名字，
+                        // 选择框和列表显示名字，落库仍是 id。
+                        parameters: <String, String>{
+                          for (final entry in document.parameters.entries)
+                            entry.key: '${asJsonMap(entry.value)['name']}',
+                        },
                       ),
                   ],
                 ),
@@ -85,7 +90,12 @@ class _PhysicsSetting extends ConsumerWidget {
   const _PhysicsSetting({required this.setting, required this.parameters});
 
   final Map<String, Object?> setting;
-  final List<String> parameters;
+
+  /// 参数 id → 显示名。引擎的物理输入/输出引用的是参数 **id**，
+  /// 但 id 是 UUID，直接显示没法看。
+  final Map<String, String> parameters;
+
+  String _label(String id) => parameters[id] ?? id;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -165,7 +175,9 @@ class _PhysicsSetting extends ConsumerWidget {
               ),
               Expanded(
                 child: Text(
-                  inputs.isEmpty ? '—' : inputs.join(', '),
+                  inputs.isEmpty
+                      ? '—'
+                      : inputs.map(_label).join(', '),
                   style: const TextStyle(fontSize: 11),
                 ),
               ),
@@ -191,7 +203,9 @@ class _PhysicsSetting extends ConsumerWidget {
               ),
               Expanded(
                 child: Text(
-                  outputs.isEmpty ? '—' : outputs.join(', '),
+                  outputs.isEmpty
+                      ? '—'
+                      : outputs.map(_label).join(', '),
                   style: const TextStyle(fontSize: 11),
                 ),
               ),
@@ -213,7 +227,7 @@ class _PhysicsSetting extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String id,
-    List<String> parameters,
+    Map<String, String> parameters,
     List<String> current,
     bool isInput,
   ) async {
@@ -225,10 +239,11 @@ class _PhysicsSetting extends ConsumerWidget {
               .tr(),
         ),
         children: <Widget>[
-          for (final parameter in parameters)
+          // 选项显示参数名，选中后存参数 id（引擎要求 id）。
+          for (final entry in parameters.entries)
             SimpleDialogOption(
-              onPressed: () => Navigator.of(context).pop(parameter),
-              child: Text(parameter),
+              onPressed: () => Navigator.of(context).pop(entry.key),
+              child: Text(entry.value),
             ),
         ],
       ),
