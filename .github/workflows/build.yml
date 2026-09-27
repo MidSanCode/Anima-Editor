@@ -123,7 +123,6 @@ jobs:
           # 安装器是「锦上添花」：装不上 Inno Setup 也不该让整条流水线失败。
           choco install innosetup --no-progress -y
           $name = "赋灵 Anima Editor"
-          $exe  = "build\windows\x64\runner\Release\anima_editor.exe"
           $iss = @"
           [Setup]
           AppName=$name
