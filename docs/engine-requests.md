@@ -94,6 +94,24 @@ UI 期望的方法面不同（`project.create/close/info/export/import/set_confi
 | 7 | `project.load` / `project.save` 回传 `name` + `display_name` | 只有 `path/nodes/parameters/motions/expressions` | 回传 `model.name` 与 `info.display_name`，省掉宿主自己记名字 |
 | 8 | `project.save {path}` 对已存在目录的语义 | 目录存在 → `Project::open`（要求 `info.json`，否则报错）；不存在 → `Project::create` | 建议目录存在但为空时也走 `Project::create`，或明确报「目录非空/不是工程」 |
 | 9 | `doc.command` 的 `op` 大小写/分隔符与 UI 不一致 | 引擎用下划线（`node_create`），UI 用点号（`node.create`） | 建议接受点号别名（或提供 op 列表查询），宿主就不必维护映射 |
+| 10 | `project.load` 只接受**目录** | 传入 `.amproj` 文件时报 `-32603 非法工程: 不是目录`；`Project::open_any` 已能解包，但没暴露 | 暴露 `open_any`（或在 `project.load` 里按 `is_dir()` 自动分派），宿主就不必自己解包再装载 |
+| 11 | 包导出/导入没有引擎侧入口 | `project.export` / `project.import` 不在 `am_call` 的方法表里，宿主自己打包 `.amproj`（ZIP） | 与第 10 条一并暴露 `am-format` 的 archive 能力 |
+
+### 已修复的宿主侧缺陷（本轮）
+
+* **引擎实例被设置写入换掉**：`engineBootProvider` 原先 `await ref.watch(settingsProvider.future)`，
+  任何设置写入（保存/打开/新建后写「最近打开」、网格/主题/语言/面板布局……）都会
+  重建它并换掉引擎实例，新实例上没有已打开的工程 → 下一次「保存」失败成
+  `PROJECT_NOT_OPEN`。现在改为只 `selectAsync` 出 `engineMode`（见 `engine_providers.dart`），
+  并在 `ProjectController` 里监听引擎实例变化做重挂载兜底。
+* **打开 `.amproj` 压缩包**：适配器原先直接把文件路径交给 `project.load`，必然失败；
+  现在先解包到包旁的 `<name>.work/` 再按目录装载，`is_archive: true` 交给界面
+  （「保存」按已有的无目录守卫引导用户走「另存为」）。
+* **`project.export` / `project.import` 恒抛 `UNSUPPORTED`**：FFI 路径下这两个方法
+  从来没能成功过（UI 的导出/导入按钮必然报错）。现在由宿主 `AmprojWriter` 完成，
+  返回与内置实现相同的 `{path, sha256, entry_count, bytes}`。
+* **`PROJECT_NOT_OPEN` 提示**：不再把 `no directory-mode project is open; use save_as`
+  这种英文内部串丢给用户，改为 i18n 的 `notice.project.notOpen`（说清下一步）。
 
 已确认的语义：
 

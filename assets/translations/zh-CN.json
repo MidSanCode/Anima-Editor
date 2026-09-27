@@ -145,6 +145,7 @@
   "notice.project.nameInvalid": "名称只能包含小写字母、数字、下划线和连字符",
   "notice.project.exists": "该目录里已经有一个工程了，请另选一个目录",
   "notice.project.noPath": "请先保存工程（另存为）后再执行该操作",
+  "notice.project.notOpen": "当前没有已打开的工程目录：请用「另存为」指定目录，或重新打开工程",
   "notice.project.webNoDirectory": "浏览器环境无法选择目录，请改用桌面版",
   "notice.project.webMemoryOnly": "浏览器环境为内存模式（{bytes} 字节），不会写入磁盘",
   "notice.project.importNeedsPath": "浏览器环境无法导入到目录",
