@@ -1,11 +1,11 @@
 {
-    "name": "anima_editor",
-    "short_name": "anima_editor",
+    "name": "Anima Editor",
+    "short_name": "Anima Editor",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Anima Editor - 赋灵 编辑器",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

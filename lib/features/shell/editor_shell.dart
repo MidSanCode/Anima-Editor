@@ -14,6 +14,7 @@ import '../../core/engine/engine_bootstrap.dart';
 import '../../core/i18n/l10n.dart';
 import '../../core/layout/dock_host.dart';
 import '../../core/layout/dock_layout.dart';
+import '../../core/platform/window_title.dart';
 import '../../core/shortcuts/shortcut_registry.dart';
 import '../../core/state/document_controller.dart';
 import '../../core/state/engine_providers.dart';
@@ -225,45 +226,55 @@ class _EditorShellState extends ConsumerState<EditorShell>
       },
     };
 
-    return CallbackShortcuts(
-      bindings: AmShortcuts.build(settings.shortcuts, handlers),
-      child: Focus(
-        autofocus: true,
-        child: DropTarget(
-          onDragEntered: (_) => setState(() => _dragging = true),
-          onDragExited: (_) => setState(() => _dragging = false),
-          onDragDone: (details) async {
-            setState(() => _dragging = false);
-            final files = details.files;
-            if (files.isEmpty) return;
-            final path = files.first.path;
-            await ref.read(projectProvider.notifier).open(path);
-          },
-          child: Material(
-            // 外壳是自绘的停靠布局，没有 Scaffold；而 MaterialApp 本身
-            // **不提供** Material 祖先，所以这里必须显式给一个，
-            // 否则树里所有 InkWell（SmallIconButton / ListRow …）都会抛
-            // 「No Material widget found」。
-            color: AppTheme.of(context).panelBackground,
-            child: Column(
-              children: <Widget>[
-                const EditorMenuBar(),
-                const EditorToolbar(),
-                NoticeHost(boot: boot),
-                Expanded(
-                  child: showStart
-                      ? StartPage(
-                          onContinue: () => setState(() => _forceEditor = true),
-                        )
-                      : DockHost(builders: _builders, specs: kEditorPanelSpecs),
-                ),
-                const EditorStatusBar(),
-                if (_dragging)
-                  Container(
-                    height: 2,
-                    color: Theme.of(context).colorScheme.primary,
+    return WindowTitleSync(
+      title: composeWindowTitle(
+        context,
+        projectPath: project.path ?? project.projectDir,
+      ),
+      child: CallbackShortcuts(
+        bindings: AmShortcuts.build(settings.shortcuts, handlers),
+        child: Focus(
+          autofocus: true,
+          child: DropTarget(
+            onDragEntered: (_) => setState(() => _dragging = true),
+            onDragExited: (_) => setState(() => _dragging = false),
+            onDragDone: (details) async {
+              setState(() => _dragging = false);
+              final files = details.files;
+              if (files.isEmpty) return;
+              final path = files.first.path;
+              await ref.read(projectProvider.notifier).open(path);
+            },
+            child: Material(
+              // 外壳是自绘的停靠布局，没有 Scaffold；而 MaterialApp 本身
+              // **不提供** Material 祖先，所以这里必须显式给一个，
+              // 否则树里所有 InkWell（SmallIconButton / ListRow …）都会抛
+              // 「No Material widget found」。
+              color: AppTheme.of(context).panelBackground,
+              child: Column(
+                children: <Widget>[
+                  const EditorMenuBar(),
+                  const EditorToolbar(),
+                  NoticeHost(boot: boot),
+                  Expanded(
+                    child: showStart
+                        ? StartPage(
+                            onContinue: () =>
+                                setState(() => _forceEditor = true),
+                          )
+                        : DockHost(
+                            builders: _builders,
+                            specs: kEditorPanelSpecs,
+                          ),
                   ),
-              ],
+                  const EditorStatusBar(),
+                  if (_dragging)
+                    Container(
+                      height: 2,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                ],
+              ),
             ),
           ),
         ),

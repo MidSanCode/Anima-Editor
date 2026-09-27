@@ -27,7 +27,7 @@ class _PreferencesDialog extends ConsumerStatefulWidget {
 
 class _PreferencesDialogState extends ConsumerState<_PreferencesDialog>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 3, vsync: this);
+  late final TabController _tabs = TabController(length: 4, vsync: this);
 
   @override
   void dispose() {
@@ -53,6 +53,7 @@ class _PreferencesDialogState extends ConsumerState<_PreferencesDialog>
                 Tab(text: 'settings.tab.general'.tr()),
                 Tab(text: 'settings.tab.engine'.tr()),
                 Tab(text: 'settings.tab.shortcuts'.tr()),
+                Tab(text: 'settings.tab.about'.tr()),
               ],
             ),
             Expanded(
@@ -62,6 +63,7 @@ class _PreferencesDialogState extends ConsumerState<_PreferencesDialog>
                   _general(settings, controller),
                   _engine(settings, controller),
                   _shortcuts(settings, controller),
+                  _about(),
                 ],
               ),
             ),
@@ -154,6 +156,17 @@ class _PreferencesDialogState extends ConsumerState<_PreferencesDialog>
       ],
     );
   }
+
+  /// 关于页：产品名、版本号、构建号、开发者与独立实现声明。
+  Widget _about() => ListView(
+    children: const <Widget>[
+      SectionHeader(titleKey: 'settings.section.about'),
+      Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: AboutCard(),
+      ),
+    ],
+  );
 
   Widget _engine(AppSettings settings, SettingsController controller) {
     return ListView(

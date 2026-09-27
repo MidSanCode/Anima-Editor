@@ -397,23 +397,7 @@ Future<void> showAbout(BuildContext context) => showDialog<void>(
   context: context,
   builder: (context) => AlertDialog(
     title: Text('app.title'.tr()),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text('app.description'.tr(), style: const TextStyle(fontSize: 12)),
-        const SizedBox(height: 8),
-        Text(
-          'about.version'.tr(namedArgs: <String, String>{'value': '0.1.0'}),
-          style: const TextStyle(fontSize: 11),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'about.notice'.tr(),
-          style: TextStyle(fontSize: 10.5, color: AppTheme.of(context).divider),
-        ),
-      ],
-    ),
+    content: const AboutCard(),
     actions: <Widget>[
       TextButton(
         onPressed: () => Navigator.of(context).pop(),

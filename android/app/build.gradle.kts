@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.anima.anima_editor"
+    namespace = "cc.eu.mscstudio.anima.editor"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,8 +15,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.anima.anima_editor"
+        // 包名含连字符时 Android 不接受，故 msc-studio 记为 mscstudio。
+        applicationId = "cc.eu.mscstudio.anima.editor"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

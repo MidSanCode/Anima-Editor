@@ -1,5 +1,5 @@
 name: anima_editor
-description: "Anima 编辑器：模型制作与动画编辑工具。"
+description: "Anima Editor（赋灵 编辑器）：模型制作与动画编辑工具。"
 publish_to: 'none'
 
 version: 0.1.0+1

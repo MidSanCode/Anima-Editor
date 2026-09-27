@@ -8,7 +8,7 @@
 PRODUCT_NAME = anima_editor
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.anima.animaEditor
+PRODUCT_BUNDLE_IDENTIFIER = cc.eu.msc-studio.anima.editor
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.anima. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 MSC MidSanCode. All rights reserved.
