@@ -1,4 +1,4 @@
-package cc.eu.mscstudio.anima.editor
+package com.midsancode.anima.editor
 
 import io.flutter.embedding.android.FlutterActivity
 

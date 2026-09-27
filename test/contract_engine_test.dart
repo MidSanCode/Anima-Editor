@@ -1,14 +1,31 @@
 /// 契约适配器冒烟测试（编辑器侧）：真实 anima.dll。
 ///
 /// 引擎库不存在时跳过引擎相关断言；绝不崩溃。
+///
+/// 示例工程：默认用仓库里的 `test/fixtures/amproj-demo`（随提交一起走，CI 上
+/// 也有）。想指到别处就用 `--dart-define=ANIMA_DEMO_DIR=<path>`。
 library;
 
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:anima_editor/core/engine/am_types.dart';
 import 'package:anima_editor/core/engine/contract_am_engine.dart';
 import 'package:anima_editor/core/engine/ffi_am_engine.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+/// 示例工程目录（绝对路径）。
+///
+/// 测试的工作目录就是包根，所以 `test/fixtures/...` 直接可用；不依赖任何
+/// 机器上的绝对路径（CI 的检出目录跟本地不一样）。
+String demoProjectDir() {
+  const override = String.fromEnvironment('ANIMA_DEMO_DIR');
+  if (override.isNotEmpty) return override;
+  return Directory('test/fixtures/amproj-demo').absolute.path;
+}
+
+/// 示例工程的目录名（用来断言 `project.open` 回传的 name）。
+String demoProjectName() =>
+    demoProjectDir().replaceAll(r'\', '/').split('/').last;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -41,9 +58,10 @@ void main() {
 
   test('open demo project + doc.query + scene', () async {
     if (engine == null) return;
-    const demoDir = r'F:\exeliang\Anima\temp\amproj-demo';
-    final result = await engine!.call('project.open', {'path': demoDir});
-    expect(result['name'], 'amproj-demo');
+    final result = await engine!.call('project.open', {
+      'path': demoProjectDir(),
+    });
+    expect(result['name'], demoProjectName());
 
     final params = await engine!.call('doc.query', {'path': 'parameters'});
     expect(asJsonMap(params['parameters']), isNotEmpty);
@@ -101,9 +119,7 @@ void main() {
   /// 「命令无法解析」，面板整个用不了。现在编辑由影子文档承担。
   test('物理设置 / 表情 / 姿势 / 设置 的编辑都能落地', () async {
     if (engine == null) return;
-    await engine!.call('project.open', {
-      'path': r'F:\exeliang\Anima\temp\amproj-demo',
-    });
+    await engine!.call('project.open', {'path': demoProjectDir()});
 
     // 物理：新增（与面板一样只给 name，id 由文档生成）→ 用回来的 id 改属性。
     await engine!.call('doc.command', {
