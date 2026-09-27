@@ -44,7 +44,7 @@ class PanelFrame extends StatelessWidget {
             child: Row(
               children: <Widget>[
                 if (icon != null) ...<Widget>[
-                  Icon(icon, size: 14, color: tokens.divider),
+                  Icon(icon, size: 14, color: tokens.textMuted),
                   const SizedBox(width: 6),
                 ],
                 Expanded(
@@ -302,7 +302,7 @@ class _SlotTabs extends ConsumerWidget {
                         size: 13,
                         color: selected
                             ? Theme.of(context).colorScheme.primary
-                            : tokens.divider,
+                            : tokens.textMuted,
                       ),
                       const SizedBox(width: 5),
                     ],
@@ -322,7 +322,7 @@ class _SlotTabs extends ConsumerWidget {
                         child: Icon(
                           Icons.close,
                           size: 12,
-                          color: tokens.divider,
+                          color: tokens.textMuted,
                         ),
                       ),
                     ],

@@ -57,7 +57,7 @@ class StartPage extends ConsumerWidget {
                           'app.description'.tr(),
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: tokens.divider,
+                            color: tokens.textMuted,
                           ),
                         ),
                       ],
@@ -118,7 +118,7 @@ class StartPage extends ConsumerWidget {
                   ),
                   child: Text(
                     'start.noRecent'.tr(),
-                    style: TextStyle(fontSize: 11.5, color: tokens.divider),
+                    style: TextStyle(fontSize: 11.5, color: tokens.textMuted),
                   ),
                 )
               else
@@ -151,7 +151,10 @@ class StartPage extends ConsumerWidget {
                         Text(
                           path,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 10, color: tokens.divider),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: tokens.textMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -163,7 +166,7 @@ class StartPage extends ConsumerWidget {
               const SizedBox(height: 24),
               Text(
                 'start.hint'.tr(),
-                style: TextStyle(fontSize: 10.5, color: tokens.divider),
+                style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
               ),
             ],
           ),
@@ -235,7 +238,7 @@ class _ActionCard extends StatelessWidget {
                         subtitleKey.tr(),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 10, color: tokens.divider),
+                        style: TextStyle(fontSize: 10, color: tokens.textMuted),
                       ),
                     ),
                   ],

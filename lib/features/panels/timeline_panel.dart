@@ -69,7 +69,7 @@ class TimelinePanel extends ConsumerWidget {
                 child: motions.isEmpty
                     ? Text(
                         'panel.timeline.noMotion'.tr(),
-                        style: TextStyle(fontSize: 11, color: tokens.divider),
+                        style: TextStyle(fontSize: 11, color: tokens.textMuted),
                       )
                     : EnumDropdown<String>(
                         value: playback.motion ?? '${motions.first['name']}',
@@ -127,7 +127,7 @@ class TimelinePanel extends ConsumerWidget {
               const Spacer(),
               Text(
                 '${Fmt.duration(playback.time)} / ${Fmt.duration(playback.duration)}',
-                style: TextStyle(fontSize: 11, color: tokens.divider),
+                style: TextStyle(fontSize: 11, color: tokens.textMuted),
               ),
             ],
           ),
@@ -313,7 +313,7 @@ class _Ruler extends ConsumerWidget {
               painter: _RulerPainter(
                 duration: duration,
                 time: playback.time,
-                color: tokens.divider,
+                color: tokens.textMuted,
                 playhead: tokens.selectionStroke,
               ),
               size: Size(width, 22),

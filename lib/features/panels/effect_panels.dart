@@ -73,7 +73,7 @@ class PhysicsPanel extends ConsumerWidget {
             padding: const EdgeInsets.all(8),
             child: Text(
               'panel.physics.hint'.tr(),
-              style: TextStyle(fontSize: 10.5, color: tokens.divider),
+              style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
             ),
           ),
       ],
@@ -118,7 +118,11 @@ class _PhysicsSetting extends ConsumerWidget {
           max: 200,
           onChanged: (value) => ref.read(documentProvider.notifier).dispatch(
             'physics.set_property',
-            <String, Object?>{'id': id, 'path': 'length', 'value': value},
+            <String, Object?>{
+              'id': id,
+              'path': 'pendulum',
+              'value': <String, Object?>{...pendulum, 'length': value},
+            },
           ),
         ),
         LabeledSlider(
@@ -128,7 +132,11 @@ class _PhysicsSetting extends ConsumerWidget {
           max: 10,
           onChanged: (value) => ref.read(documentProvider.notifier).dispatch(
             'physics.set_property',
-            <String, Object?>{'id': id, 'path': 'frequency', 'value': value},
+            <String, Object?>{
+              'id': id,
+              'path': 'pendulum',
+              'value': <String, Object?>{...pendulum, 'frequency': value},
+            },
           ),
         ),
         LabeledSlider(
@@ -138,7 +146,11 @@ class _PhysicsSetting extends ConsumerWidget {
           max: 1,
           onChanged: (value) => ref.read(documentProvider.notifier).dispatch(
             'physics.set_property',
-            <String, Object?>{'id': id, 'path': 'damping', 'value': value},
+            <String, Object?>{
+              'id': id,
+              'path': 'pendulum',
+              'value': <String, Object?>{...pendulum, 'damping': value},
+            },
           ),
         ),
         Padding(
@@ -148,7 +160,7 @@ class _PhysicsSetting extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'panel.physics.inputs'.tr(),
-                  style: TextStyle(fontSize: 11, color: tokens.divider),
+                  style: TextStyle(fontSize: 11, color: tokens.textMuted),
                 ),
               ),
               Expanded(
@@ -174,7 +186,7 @@ class _PhysicsSetting extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'panel.physics.outputs'.tr(),
-                  style: TextStyle(fontSize: 11, color: tokens.divider),
+                  style: TextStyle(fontSize: 11, color: tokens.textMuted),
                 ),
               ),
               Expanded(
@@ -305,7 +317,7 @@ class ExpressionPanel extends ConsumerWidget {
             padding: const EdgeInsets.all(8),
             child: Text(
               'panel.expression.hint'.tr(),
-              style: TextStyle(fontSize: 10.5, color: tokens.divider),
+              style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
             ),
           ),
       ],
@@ -455,7 +467,7 @@ class PosePanel extends ConsumerWidget {
           padding: const EdgeInsets.all(8),
           child: Text(
             'panel.pose.hint'.tr(),
-            style: TextStyle(fontSize: 10.5, color: tokens.divider),
+            style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
           ),
         ),
       ],
@@ -522,14 +534,14 @@ class LipsyncPanel extends ConsumerWidget {
                         '${document.parameters[mouthParams.first]?['name']}',
                   },
                 ),
-                style: TextStyle(fontSize: 11, color: tokens.divider),
+                style: TextStyle(fontSize: 11, color: tokens.textMuted),
               ),
             ),
           Padding(
             padding: const EdgeInsets.all(8),
             child: Text(
               'panel.lipsync.hint'.tr(),
-              style: TextStyle(fontSize: 10.5, color: tokens.divider),
+              style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
             ),
           ),
         ],
@@ -618,7 +630,7 @@ class ModelSettingsPanel extends ConsumerWidget {
             padding: const EdgeInsets.all(8),
             child: Text(
               'panel.model.hint'.tr(),
-              style: TextStyle(fontSize: 10.5, color: tokens.divider),
+              style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
             ),
           ),
         ],

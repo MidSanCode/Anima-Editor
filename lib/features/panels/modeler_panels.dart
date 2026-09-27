@@ -150,7 +150,7 @@ class _MeshPanelState extends ConsumerState<MeshPanel> {
                     ),
                     child: Text(
                       'panel.mesh.noVertexSelected'.tr(),
-                      style: TextStyle(fontSize: 11, color: tokens.divider),
+                      style: TextStyle(fontSize: 11, color: tokens.textMuted),
                     ),
                   )
                 else
@@ -259,7 +259,7 @@ class _VertexRow extends StatelessWidget {
             width: 34,
             child: Text(
               '#$index',
-              style: TextStyle(fontSize: 10.5, color: tokens.divider),
+              style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
             ),
           ),
           Expanded(
@@ -349,7 +349,7 @@ class DeformerPanel extends ConsumerWidget {
                   ),
                   child: Text(
                     'panel.deformer.empty'.tr(),
-                    style: TextStyle(fontSize: 11, color: tokens.divider),
+                    style: TextStyle(fontSize: 11, color: tokens.textMuted),
                   ),
                 )
               else
@@ -409,7 +409,7 @@ class DeformerPanel extends ConsumerWidget {
                   ),
                   child: Text(
                     'panel.deformer.bindHint'.tr(),
-                    style: TextStyle(fontSize: 10.5, color: tokens.divider),
+                    style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
                   ),
                 ),
                 Padding(
@@ -459,7 +459,7 @@ class _ControlPointGrid extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Text(
           'panel.deformer.noControlPoints'.tr(),
-          style: TextStyle(fontSize: 11, color: tokens.divider),
+          style: TextStyle(fontSize: 11, color: tokens.textMuted),
         ),
       );
     }
@@ -494,7 +494,7 @@ class _ControlPointGrid extends ConsumerWidget {
                   width: 30,
                   child: Text(
                     '#$i',
-                    style: TextStyle(fontSize: 10.5, color: tokens.divider),
+                    style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
                   ),
                 ),
                 Expanded(

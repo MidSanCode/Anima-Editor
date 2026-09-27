@@ -71,7 +71,7 @@ class _CurvePanelState extends ConsumerState<CurvePanel> {
                 child: params.isEmpty
                     ? Text(
                         'panel.curve.noCurve'.tr(),
-                        style: TextStyle(fontSize: 11, color: tokens.divider),
+                        style: TextStyle(fontSize: 11, color: tokens.textMuted),
                       )
                     : EnumDropdown<String>(
                         value: paramId!,
@@ -208,7 +208,7 @@ class _CurvePanelState extends ConsumerState<CurvePanel> {
         padding: const EdgeInsets.all(8),
         child: Text(
           'panel.curve.selectKey'.tr(),
-          style: TextStyle(fontSize: 11, color: tokens.divider),
+          style: TextStyle(fontSize: 11, color: tokens.textMuted),
         ),
       );
     }
@@ -228,7 +228,7 @@ class _CurvePanelState extends ConsumerState<CurvePanel> {
                 width: 108,
                 child: Text(
                   'panel.curve.interp'.tr(),
-                  style: TextStyle(fontSize: 11, color: tokens.divider),
+                  style: TextStyle(fontSize: 11, color: tokens.textMuted),
                 ),
               ),
               Expanded(

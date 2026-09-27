@@ -51,17 +51,30 @@ UI 期望的方法面不同（`project.create/close/info/export/import/set_confi
 
 翻译层要点：
 
-* `project.load` 结果**不含 `name`** → 从 `project.spec` 的 `model.name` 取。
-* `project.create` 引擎没有 → 用 `project.new`（建空模型）+ `project.save`
-  拼出来：宿主先写 `info.json`/`registry.json`（`project.save` 在目录已存在时
-  走 `Project::open`，要求这两个文件），再由引擎写出完整 spec。
+* **编辑命令不进引擎。** 引擎 `doc.command` 的 `op` 是**下划线**形式，且只覆盖
+  模型结构（`node_create` / `mesh_set` / `keyform_record` / `parameter_add`…）；
+  物理、动作、表情、姿势、设置**没有编辑命令**。UI 用的是点号 op
+  （`physics.add_setting` / `expression.create` / `settings.set`…），直接透传只会
+  得到 `命令无法解析`。做法：`ContractAmEngine` 内挂一份**影子文档**
+  （`LocalDocument`，已实现全部 55 个宿主 op + 撤销重做 + 绘制顺序），
+  `doc.command` 先在影子上生效，再经 `engine_spec_codec.dart` 投影成引擎 `Spec`，
+  用 `project.set_spec` 一次性推给引擎求值。
+* **撤销重做由影子文档负责。** `project.set_spec` 会重建引擎的 `Document`
+  （撤销栈、时钟、动作播放、表情归零；参数值由 `ParamStore::sync_with_model`
+  保留），所以 `doc.undo`/`doc.redo`/`doc.history` 一律读影子文档。
+* **宿主扩展通道。** 引擎 `Spec` 表达不了宿主的部分字段（`bounds`、
+  `warp.control_points` 的宿主形状、`pendulum.{length,frequency,damping}`、
+  `keys[].in_tangent/out_tangent`、`art_path` 等）。整份宿主文档挂在
+  `spec/config.json` 的 `__host.doc` 上 —— `ProjectConfig` 是
+  `#[serde(flatten)]`，未知键原样往返，`project.save`/`project.load` 都不丢。
+  读回时优先用 `__host.doc`；没有（老工程/引擎原生工程）则按引擎形状重建。
+* `project.load` 结果**不含 `name`** → 从 `project.spec` 的 `model.name` 或
+  `info.json` 取。
+* `project.create` 引擎没有 → 宿主先写 `info.json`/`registry.json`/`spec/`
+  （`project.save` 在目录已存在时走 `Project::open`，要求这两个文件），
+  影子文档重置为默认空工程，再 `project.set_spec` + `project.save` 落盘。
   `project.save` / `project.load` 都**不回传 `display_name`**，
   所以适配层自己记住刚写下的 `info.json` 值。
-* 新建工程在 `project.new` 之后补一个 `doc.command op:"node_create"` 的根部件 ——
-  `project.new` 建出的模型没有任何节点，而内置实现的空工程带一个根节点，
-  不补的话两条路径的新工程不一致。
-* `doc.undo` / `doc.redo` 会改变结构 → 必须重新拉 `project.spec` 刷新缓存，
-  否则 `doc.query path:"hierarchy"` 返回旧节点表。
 * 眨眼/呼吸/口型（`runtime.blink/breath/lipsync`）引擎没有 → **宿主侧**实现，
   按参数名（`EyeOpen` / `Breath` / `MouthOpen`）写 `runtime.set_param`。
 * `.amproj` 压缩包导出/导入引擎没有 → 宿主侧 `AmprojWriter`；适配层对这些方法抛
@@ -75,11 +88,12 @@ UI 期望的方法面不同（`project.create/close/info/export/import/set_confi
 | 1 | **外部纹理桥** | ABI 无纹理句柄导出；画布只能用降级画家（`AmSceneProvider`）重绘 | 暴露离屏帧的共享纹理句柄（或确认 `renderer.render` + `am_frame_copy` + `decodeImageFromPixels` 为受支持路径），使画布走 `Texture` widget |
 | 2 | `doc.query path:"scene"` 完整性 | 仅 `drawables[].id/vertices` | 返回完整几何（`uvs`/`indices`/`opacity`/`blend`/`texture`/`draw_order`/`mask`）与 `deformers`，编辑器即可删掉本地 `AmSceneProvider` |
 | 3 | `doc.command` 新建对象返回 id | 只返回 `{effects, revision}` | 追加可选 `created:["<id>"]`（向后兼容），免去整表重载 |
-| 4 | 动作/物理/表情的**编辑**能力 | 引擎只有运行时播放与 `spec` 层替换 | 补齐动作关键帧增删改、物理设置读写、表情增删改的编辑操作 |
-| 5 | 暴露 `project.create` | `am-format` 有 `Project::create`，但 `am_call` 没暴露；宿主只能 `project.new` + `project.save` 绕 | 直接暴露建目录 + 空 spec 的方法，宿主就不必自己写 `info.json` |
+| 4 | 动作/物理/表情的**编辑**能力 | 引擎只有运行时播放与 `spec` 层替换；编辑器改用影子文档 + `project.set_spec` 绕过（见 §2） | 补齐动作关键帧增删改、物理设置读写、表情增删改的编辑操作，编辑器即可去掉影子文档的整份推送 |
+| 5 | 暴露 `project.create` | `am-format` 有 `Project::create`，但 `am_call` 没暴露；宿主只能自己写 `info.json` + `project.save` 绕 | 直接暴露建目录 + 空 spec 的方法，宿主就不必自己写 `info.json` |
 | 6 | `diagnostics.stats` 字段稳定性 | 字段：`nodes/parameters/textures/motions/expressions/physics/drawables/revision/dirty/frame` | 性能面板按 `stat.<field>` 取文案，请保持字段名稳定或提前通知 |
 | 7 | `project.load` / `project.save` 回传 `name` + `display_name` | 只有 `path/nodes/parameters/motions/expressions` | 回传 `model.name` 与 `info.display_name`，省掉宿主自己记名字 |
 | 8 | `project.save {path}` 对已存在目录的语义 | 目录存在 → `Project::open`（要求 `info.json`，否则报错）；不存在 → `Project::create` | 建议目录存在但为空时也走 `Project::create`，或明确报「目录非空/不是工程」 |
+| 9 | `doc.command` 的 `op` 大小写/分隔符与 UI 不一致 | 引擎用下划线（`node_create`），UI 用点号（`node.create`） | 建议接受点号别名（或提供 op 列表查询），宿主就不必维护映射 |
 
 已确认的语义：
 

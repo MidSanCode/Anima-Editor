@@ -341,7 +341,7 @@ class _BootFailure extends StatelessWidget {
               SelectableText(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: tokens.divider),
+                style: TextStyle(fontSize: 11, color: tokens.textMuted),
               ),
               const SizedBox(height: 16),
               FilledButton.tonal(

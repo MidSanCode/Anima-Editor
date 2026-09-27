@@ -268,7 +268,7 @@ class EditorMenuBar extends ConsumerWidget {
             padding: const EdgeInsets.only(right: 8),
             child: Text(
               project.displayName ?? project.name ?? 'app.title'.tr(),
-              style: TextStyle(fontSize: 11, color: tokens.divider),
+              style: TextStyle(fontSize: 11, color: tokens.textMuted),
             ),
           ),
         ],

@@ -197,7 +197,7 @@ class _ParameterPanelState extends ConsumerState<ParameterPanel> {
             '${document.parameters.length}',
             style: TextStyle(
               fontSize: 10.5,
-              color: AppTheme.of(context).divider,
+              color: AppTheme.of(context).textMuted,
             ),
           ),
         ],

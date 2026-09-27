@@ -290,7 +290,7 @@ class _CanvasViewState extends ConsumerState<CanvasView> {
       content = Center(
         child: Text(
           'canvas.noEngine'.tr(),
-          style: TextStyle(color: tokens.divider, fontSize: 12),
+          style: TextStyle(color: tokens.textMuted, fontSize: 12),
         ),
       );
     }
@@ -880,7 +880,7 @@ class CanvasToolbar extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Text(
                   '${viewport.zoom.toStringAsFixed(2)}x',
-                  style: TextStyle(fontSize: 10.5, color: tokens.divider),
+                  style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
                 ),
               ),
             ],

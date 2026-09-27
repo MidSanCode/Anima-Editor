@@ -252,7 +252,7 @@ class _HierarchyPanelState extends ConsumerState<HierarchyPanel> {
           onTap: () => ref.read(selectionProvider.notifier).select(id),
           leading: Text(
             '${index + 1}',
-            style: TextStyle(fontSize: 10, color: AppTheme.of(context).divider),
+            style: TextStyle(fontSize: 10, color: AppTheme.of(context).textMuted),
           ),
           child: Text(name, style: const TextStyle(fontSize: 11.5)),
         );
@@ -439,7 +439,7 @@ class _HierarchyPanelState extends ConsumerState<HierarchyPanel> {
       case 'rotation_deformer':
         return tokens.warning;
       default:
-        return tokens.divider;
+        return tokens.textMuted;
     }
   }
 }

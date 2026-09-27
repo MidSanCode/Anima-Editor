@@ -101,7 +101,7 @@ class _IssueRow extends StatelessWidget {
     final color = switch (issue.severity) {
       'error' => tokens.danger,
       'warning' => tokens.warning,
-      _ => tokens.divider,
+      _ => tokens.textMuted,
     };
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -129,7 +129,7 @@ class _IssueRow extends StatelessWidget {
                 if (issue.path.isNotEmpty)
                   Text(
                     issue.path,
-                    style: TextStyle(fontSize: 10, color: tokens.divider),
+                    style: TextStyle(fontSize: 10, color: tokens.textMuted),
                   ),
                 if (issue.message.isNotEmpty)
                   Text(issue.message, style: const TextStyle(fontSize: 10.5)),
@@ -171,7 +171,7 @@ class HistoryPanel extends ConsumerWidget {
               const Spacer(),
               Text(
                 '${document.history.length}',
-                style: TextStyle(fontSize: 10.5, color: tokens.divider),
+                style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
               ),
             ],
           ),
@@ -193,7 +193,7 @@ class HistoryPanel extends ConsumerWidget {
                     return ListRow(
                       trailing: Text(
                         '#${document.history.length - index}',
-                        style: TextStyle(fontSize: 10, color: tokens.divider),
+                        style: TextStyle(fontSize: 10, color: tokens.textMuted),
                       ),
                       child: Text(entry, style: const TextStyle(fontSize: 11)),
                     );
@@ -261,7 +261,7 @@ class PerformancePanel extends ConsumerWidget {
               padding: const EdgeInsets.all(8),
               child: Text(
                 'common.loading'.tr(),
-                style: TextStyle(fontSize: 11, color: tokens.divider),
+                style: TextStyle(fontSize: 11, color: tokens.textMuted),
               ),
             ),
             error: (error, stack) => Padding(

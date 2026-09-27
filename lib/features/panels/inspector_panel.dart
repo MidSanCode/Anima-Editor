@@ -53,7 +53,7 @@ class InspectorPanel extends ConsumerWidget {
                   width: 108,
                   child: Text(
                     'common.name'.tr(),
-                    style: TextStyle(fontSize: 11, color: tokens.divider),
+                    style: TextStyle(fontSize: 11, color: tokens.textMuted),
                   ),
                 ),
                 Expanded(
@@ -108,7 +108,7 @@ class InspectorPanel extends ConsumerWidget {
                     width: 108,
                     child: Text(
                       'panel.inspector.blend'.tr(),
-                      style: TextStyle(fontSize: 11, color: tokens.divider),
+                      style: TextStyle(fontSize: 11, color: tokens.textMuted),
                     ),
                   ),
                   Expanded(
@@ -136,7 +136,7 @@ class InspectorPanel extends ConsumerWidget {
                     child: Text(
                       '${node['texture'] ?? 'panel.inspector.noTexture'.tr()}',
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, color: tokens.divider),
+                      style: TextStyle(fontSize: 11, color: tokens.textMuted),
                     ),
                   ),
                   SmallTextButton(
@@ -253,7 +253,7 @@ class InspectorPanel extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             child: Text(
               'panel.inspector.noMask'.tr(),
-              style: TextStyle(fontSize: 11, color: tokens.divider),
+              style: TextStyle(fontSize: 11, color: tokens.textMuted),
             ),
           )
         else

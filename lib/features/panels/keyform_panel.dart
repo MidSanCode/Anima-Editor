@@ -62,7 +62,7 @@ class KeyformPanel extends ConsumerWidget {
                   ),
                   child: Text(
                     'panel.keyform.none'.tr(),
-                    style: TextStyle(fontSize: 11, color: tokens.divider),
+                    style: TextStyle(fontSize: 11, color: tokens.textMuted),
                   ),
                 )
               else
@@ -88,7 +88,7 @@ class KeyformPanel extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'panel.keyform.recordHint'.tr(),
-                  style: TextStyle(fontSize: 10.5, color: tokens.divider),
+                  style: TextStyle(fontSize: 10.5, color: tokens.textMuted),
                 ),
               ),
               SmallIconButton(
@@ -164,7 +164,7 @@ class KeyformPanel extends ConsumerWidget {
                 width: 108,
                 child: Text(
                   'panel.keyform.blendType'.tr(),
-                  style: TextStyle(fontSize: 11, color: tokens.divider),
+                  style: TextStyle(fontSize: 11, color: tokens.textMuted),
                 ),
               ),
               Expanded(
@@ -232,7 +232,7 @@ class _KeyformRow extends ConsumerWidget {
       leading: Icon(
         hasDelta ? Icons.edit : Icons.bookmark,
         size: 12,
-        color: hasDelta ? tokens.accentSecondary : tokens.divider,
+        color: hasDelta ? tokens.accentSecondary : tokens.textMuted,
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
