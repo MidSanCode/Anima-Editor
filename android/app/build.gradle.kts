@@ -67,6 +67,14 @@ kotlin {
     }
 }
 
+// 引擎原生库（可选，走 AGP 默认约定，所以这里不需要写任何配置）：
+// CI 把引擎 anima-android.aar 里的 jni/<abi>/libanima.so 放到
+// app/src/main/jniLibs/<abi>/（见 .github/workflows/build.yml 的 android 作业），
+// 而 src/main/jniLibs 本来就是 AGP 默认的 jniLibs 源目录，会随 APK 一起打包。
+// 引擎 AAR 里的 classes.jar 是空壳（引擎没有 Java API，宿主自己 loadLibrary），
+// 所以也不需要在 dependencies 里 implementation 那个 aar。
+// 本地没有这个目录时构建照常通过，应用运行期自动降级到内置实现。
+
 flutter {
     source = "../.."
 }
