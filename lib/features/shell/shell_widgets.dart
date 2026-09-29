@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/engine/engine_bootstrap.dart';
 import '../../core/i18n/l10n.dart';
+import '../../core/platform/safe_area.dart';
 import '../../core/state/document_controller.dart';
 import '../../core/state/engine_providers.dart';
 import '../../core/state/project_controller.dart';
@@ -275,8 +276,13 @@ class EditorStatusBar extends ConsumerWidget {
     final status = ref.watch(engineStatusProvider);
 
     return Container(
-      height: 24,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      // 同上：条长高、背景铺到底，内容靠 padding 让开底部手势条。
+      height: context.bottomBarHeight(24),
+      padding: EdgeInsets.only(
+        left: 8,
+        right: 8,
+        bottom: context.safeBottom,
+      ),
       decoration: BoxDecoration(
         color: tokens.panelHeader,
         border: Border(top: BorderSide(color: tokens.divider)),

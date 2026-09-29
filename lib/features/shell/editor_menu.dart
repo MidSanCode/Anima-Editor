@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/layout/dock_layout.dart';
+import '../../core/platform/safe_area.dart';
 import '../../core/shortcuts/shortcut_registry.dart';
 import '../../core/state/document_controller.dart';
 import '../../core/state/engine_providers.dart';
@@ -31,7 +32,11 @@ class EditorMenuBar extends ConsumerWidget {
     final controller = ref.read(dockLayoutProvider.notifier);
 
     return Container(
-      height: 32,
+      // 高度要**加上**顶部安全区：条本身长高、背景照样铺到屏幕最上边，内容
+      // 再靠 padding 让开状态栏。直接把整根 Column 包 SafeArea 的话，上面会
+      // 留一条没有背景的空白，看着像渲染坏了。
+      height: context.topBarHeight(32),
+      padding: EdgeInsets.only(top: context.safeTop),
       decoration: BoxDecoration(
         color: tokens.panelHeader,
         border: Border(bottom: BorderSide(color: tokens.divider)),
