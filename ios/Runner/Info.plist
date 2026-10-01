@@ -26,6 +26,15 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- 工程建在应用私有目录里（见 lib/core/platform/workspace_directory.dart）。
+	     iOS 的沙盒默认把这里藏起来，用户既看不到也拿不出来，所以开两个键：
+	     UIFileSharingEnabled 让「文件」App 显示本应用的文档目录，
+	     LSSupportsOpeningDocumentsInPlace 允许就地打开而不是先拷贝一份。
+	     这样「新建工程」之后用户能在「文件」里找到 it，也能拷到别处。 -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

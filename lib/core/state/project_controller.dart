@@ -3,10 +3,12 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/am_engine.dart';
 import '../engine/am_types.dart';
+import '../platform/workspace_directory.dart';
 import '../project/amproj_fs.dart';
 import 'document_controller.dart';
 import 'engine_providers.dart';
@@ -133,8 +135,11 @@ class ProjectController extends Notifier<ProjectState> {
   void clearDirty() => state = state.copyWith(dirty: false);
 
   /// 新建工程（需要目录模式；Web 端不可用）。
+  ///
+  /// [directory] 为 null 表示落点由本方法决定：移动端用应用私有目录
+  /// （理由见 [WorkspaceDirectory]），桌面端则必须由调用方先选好目录。
   Future<bool> create({
-    required String directory,
+    String? directory,
     required String name,
     String displayName = '',
     String author = '',
@@ -149,9 +154,11 @@ class ProjectController extends Notifier<ProjectState> {
       progress: null,
     );
     try {
+      final target = directory ?? await _resolveCreateTarget(name);
+      if (target == null) return false;
       final engine = ref.read(engineProvider);
       final result = await engine.call('project.create', <String, Object?>{
-        'dir': directory,
+        'dir': target,
         'name': name,
         'display_name': displayName,
         'author': author,
@@ -172,6 +179,16 @@ class ProjectController extends Notifier<ProjectState> {
             'notice.project.created',
             args: <String, String>{'name': '${result['name']}'},
           );
+      // 移动端新建时不问目录（见 _resolveCreateTarget），用户看不到落点，
+      // 所以这里额外告诉他工程建在哪、以及想换位置该走「导出」。
+      if (directory == null && WorkspaceDirectory.usesAppPrivateStorage) {
+        ref
+            .read(notificationsProvider.notifier)
+            .info(
+              'notice.project.mobileLocation',
+              args: <String, String>{'path': '${result['path']}'},
+            );
+      }
       return true;
     } on AmException catch (error) {
       // 目录里已有工程时给一条明确的提示，而不是通用的「引擎调用失败」。
@@ -180,8 +197,33 @@ class ProjectController extends Notifier<ProjectState> {
       } else {
         _noticeError('project.create', error);
       }
-      state = state.copyWith(busy: false);
       return false;
+    } on Object catch (error) {
+      // 移动端最容易走到这里：插件未注册、私有目录取不到、写盘被拒。
+      // 这类异常以前会直接逃逸，busy 永不复位 —— 界面就「一直加载」。
+      _noticeUnexpected('project.create', error);
+      return false;
+    } finally {
+      state = state.copyWith(busy: false);
+    }
+  }
+
+  /// 决定新建工程落在哪个目录。
+  ///
+  /// * 移动端：应用私有目录下 `projects/<name>`，同名自动让号。这两个平台的
+  ///   系统目录选择器默认只给只读授权、返回的又是 `content://` URI，
+  ///   拿来写工程必然失败，所以直接跳过选择器。
+  /// * 桌面端：没有沙盒限制，位置交给用户选。
+  Future<String?> _resolveCreateTarget(String name) async {
+    if (!WorkspaceDirectory.usesAppPrivateStorage) {
+      _notice('notice.project.needDirectory');
+      return null;
+    }
+    try {
+      return await WorkspaceDirectory.allocate(name);
+    } on Object catch (error) {
+      _noticeUnexpected('project.create', error);
+      return null;
     }
   }
 
@@ -219,8 +261,12 @@ class ProjectController extends Notifier<ProjectState> {
       return true;
     } on AmException catch (error) {
       _noticeError('project.open', error);
-      state = state.copyWith(busy: false);
       return false;
+    } on Object catch (error) {
+      _noticeUnexpected('project.open', error);
+      return false;
+    } finally {
+      state = state.copyWith(busy: false);
     }
   }
 
@@ -247,8 +293,12 @@ class ProjectController extends Notifier<ProjectState> {
       return true;
     } on AmException catch (error) {
       _noticeError('project.save', error);
-      state = state.copyWith(busy: false);
       return false;
+    } on Object catch (error) {
+      _noticeUnexpected('project.save', error);
+      return false;
+    } finally {
+      state = state.copyWith(busy: false);
     }
   }
 
@@ -273,8 +323,12 @@ class ProjectController extends Notifier<ProjectState> {
       return report;
     } on AmException catch (error) {
       _noticeError('project.validate', error);
-      state = state.copyWith(busy: false);
       return null;
+    } on Object catch (error) {
+      _noticeUnexpected('project.validate', error);
+      return null;
+    } finally {
+      state = state.copyWith(busy: false);
     }
   }
 
@@ -309,8 +363,12 @@ class ProjectController extends Notifier<ProjectState> {
       } else {
         _noticeError('project.export', error);
       }
-      state = state.copyWith(busy: false);
       return null;
+    } on Object catch (error) {
+      _noticeUnexpected('project.export', error);
+      return null;
+    } finally {
+      state = state.copyWith(busy: false);
     }
   }
 
@@ -336,8 +394,12 @@ class ProjectController extends Notifier<ProjectState> {
       return true;
     } on AmException catch (error) {
       _noticeError('project.import', error);
-      state = state.copyWith(busy: false);
       return false;
+    } on Object catch (error) {
+      _noticeUnexpected('project.import', error);
+      return false;
+    } finally {
+      state = state.copyWith(busy: false);
     }
   }
 
@@ -364,6 +426,20 @@ class ProjectController extends Notifier<ProjectState> {
 
   void _notice(String key) =>
       ref.read(notificationsProvider.notifier).warn(key);
+
+  /// 非引擎异常（插件缺失 / 写盘失败 / 目录取不到）的统一提示。
+  ///
+  /// 这类错误以前会让 `busy` 卡住且界面毫无反应；现在既有可读提示，
+  /// 也用 debugPrint 留下异常内容，便于排查。
+  void _noticeUnexpected(String method, Object error) {
+    debugPrint('[project.$method] 未预期的异常: $error');
+    ref
+        .read(notificationsProvider.notifier)
+        .error(
+          'notice.error.unexpected',
+          args: <String, String>{'method': method},
+        );
+  }
 
   void _noticeError(String method, AmException error) {
     // `PROJECT_NOT_OPEN` 有专用文案（说清下一步怎么做）；其余走通用提示。

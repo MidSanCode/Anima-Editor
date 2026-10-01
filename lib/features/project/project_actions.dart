@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/platform/file_service.dart';
+import '../../core/platform/workspace_directory.dart';
 import '../../core/state/document_controller.dart';
 import '../../core/state/project_controller.dart';
 import '../../core/state/runtime_controller.dart';
@@ -22,11 +23,19 @@ class ProjectActions {
   const ProjectActions._();
 
   /// 新建工程（选择目录 + 名称）。
+  ///
+  /// 移动端（Android / iOS）**不问目录**：那两个平台的系统目录选择器默认
+  /// 只给只读授权、返回的还是 `content://` URI，拿去写工程必然失败。
+  /// 工程直接落在应用私有目录里（由 ProjectController 决定，见
+  /// [WorkspaceDirectory]）；想放到别处走「导出」。
   static Future<void> create(BuildContext context, WidgetRef ref) async {
-    final directory = await FileService.pickDirectory(
-      dialogTitle: 'dialog.newProject'.tr(),
-    );
-    if (directory == null || !context.mounted) return;
+    String? directory;
+    if (!WorkspaceDirectory.usesAppPrivateStorage) {
+      directory = await FileService.pickDirectory(
+        dialogTitle: 'dialog.newProject'.tr(),
+      );
+      if (directory == null || !context.mounted) return;
+    }
     final name = await promptDialog(
       context,
       titleKey: 'dialog.newProject',

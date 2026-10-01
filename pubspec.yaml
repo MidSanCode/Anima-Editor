@@ -19,6 +19,8 @@ dependencies:
   file_picker: ^13.1.0
   ffi: ^2.2.0
   path: ^1.9.1
+  # 移动端（Android / iOS）新建工程要往应用私有目录写，取这个目录靠它。
+  path_provider: ^2.1.6
   desktop_drop: ^0.8.4
   crypto: ^3.0.7
   collection: ^1.19.1
